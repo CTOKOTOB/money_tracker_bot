@@ -75,7 +75,20 @@ async def cmd_add_expense(message: Message, state: FSMContext):
             await message.answer("У вас ещё нет категорий. Добавьте через /add_category")
             return
 
-        buttons = [[KeyboardButton(text=cat["name"])] for cat in categories]
+    #    buttons = [[KeyboardButton(text=cat["name"])] for cat in categories]
+    #    buttons.append([KeyboardButton(text="⬅ Назад")])
+    #    markup = ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
+
+        buttons = []
+        row = []
+        for i, cat in enumerate(categories, 1):
+            row.append(KeyboardButton(text=cat["name"]))
+            if i % 3 == 0:
+                buttons.append(row)
+                row = []
+        if row:
+            buttons.append(row)
+        buttons.append([KeyboardButton(text="⬅ Назад")])
         markup = ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
         await state.set_data({
@@ -86,6 +99,10 @@ async def cmd_add_expense(message: Message, state: FSMContext):
         await message.answer("Выберите категорию:", reply_markup=markup)
         await state.set_state(AddExpenseState.waiting_for_category)
 
+@router.message(AddExpenseState.waiting_for_category, F.text == "⬅ Назад")
+async def cancel_add_expense_category(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Добавление траты отменено.", reply_markup=ReplyKeyboardRemove())
 
 
 @router.message(AddExpenseState.waiting_for_category)

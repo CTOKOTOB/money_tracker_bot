@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 from db.database import init_db
 
-from handlers import start
+from handlers import start, expense
 
 load_dotenv()
 
@@ -15,6 +15,7 @@ async def main():
     await init_db()
 
     dp.include_router(start.router)
+    dp.include_router(expense.router)
 
     try:
         print("🚀 Бот запущен")

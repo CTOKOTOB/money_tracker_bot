@@ -133,7 +133,7 @@ async def process_expense_amount(message: Message, state: FSMContext):
         resize_keyboard=True
     )
 
-    await message.answer("Введите описание траты (например, «Обед», «Такси»):", reply_markup=markup)
+    await message.answer("Введите описание:", reply_markup=markup)
     await state.set_state(AddExpenseState.waiting_for_description)
 
 

@@ -1,7 +1,12 @@
-start - начать работу
-add_category - добавить категорию
 add_expense - добавить трату
+add_income - добавить доход
+report - отчет
+report_detail - отчет по категории за конкретный месяц
+add_category - добавить категорию
 delete_last - удалить последнюю трату
+delete_last_income - удалить последнюю запись о доходе
+start - начать работу
+
 
 
 

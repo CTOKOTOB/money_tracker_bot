@@ -136,3 +136,57 @@ async def get_monthly_benefits_full(telegram_id: int, year: int, month: int):
     pool = get_db_pool()
     async with pool.acquire() as conn:
         return await conn.fetch(query, telegram_id, year, month)
+
+async def get_user_categories(telegram_id: int):
+    query = """
+    SELECT c.id, c.name
+    FROM app.categories c
+    JOIN app.users u ON c.user_id = u.id
+    WHERE u.telegram_id = $1
+    ORDER BY c.name
+    """
+    pool = get_db_pool()
+    async with pool.acquire() as conn:
+        return await conn.fetch(query, telegram_id)
+
+async def get_category_name(telegram_id: int, category_id: int):
+    query = """
+    SELECT c.name
+    FROM app.categories c
+    JOIN app.users u ON c.user_id = u.id
+    WHERE u.telegram_id = $1 AND c.id = $2
+    """
+    pool = get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(query, telegram_id, category_id)
+        return row["name"] if row else None
+
+async def get_detailed_category_expenses(telegram_id: int, category_id: int, year: int, month: int):
+    query = """
+    SELECT e.amount, e.description, e.created_at
+    FROM app.expenses e
+    JOIN app.categories c ON c.id = e.category_id
+    JOIN app.users u ON u.id = e.user_id
+    WHERE u.telegram_id = $1
+      AND e.category_id = $2
+      AND EXTRACT(YEAR FROM e.created_at) = $3
+      AND EXTRACT(MONTH FROM e.created_at) = $4
+    ORDER BY e.created_at
+    """
+    pool = get_db_pool()
+    async with pool.acquire() as conn:
+        return await conn.fetch(query, telegram_id, category_id, year, month)
+
+async def get_available_years_for_category(telegram_id: int, category_id: int):
+    query = """
+    SELECT DISTINCT EXTRACT(YEAR FROM e.created_at)::int AS year
+    FROM app.expenses e
+    JOIN app.users u ON u.id = e.user_id
+    WHERE u.telegram_id = $1
+      AND e.category_id = $2
+    ORDER BY year DESC
+    """
+    pool = get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(query, telegram_id, category_id)
+        return [row["year"] for row in rows]

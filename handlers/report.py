@@ -5,7 +5,7 @@ from db import database as db
 
 router = Router()
 
-# Русские месяцы (номер → название)
+# Русские названия месяцев
 RUS_MONTHS = {
     1: "Январь", 2: "Февраль", 3: "Март",
     4: "Апрель", 5: "Май", 6: "Июнь",
@@ -24,11 +24,9 @@ def get_month_selector_keyboard(months_count=6) -> InlineKeyboardMarkup:
         callback_data = f"report_{month_date.year}_{month_date.month}"
         buttons.append(InlineKeyboardButton(text=text, callback_data=callback_data))
 
-    # Разбиваем на строки по 3 кнопки
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         buttons[i:i + 3] for i in range(0, len(buttons), 3)
     ])
-    # Добавляем кнопку Отмена
     keyboard.inline_keyboard.append([
         InlineKeyboardButton(text="❌ Отмена", callback_data="report_cancel")
     ])
@@ -49,34 +47,39 @@ async def process_report_month(callback: CallbackQuery):
         await callback.answer()
         return
 
-    # Пример: report_2024_7
     _, year, month = data.split("_")
     year, month = int(year), int(month)
 
     telegram_id = callback.from_user.id
 
-    # Получаем доходы и расходы
-    benefits = await db.get_monthly_benefits_report(telegram_id, year, month)
+    benefits = await db.get_monthly_benefits_full(telegram_id, year, month)
     expenses = await db.get_monthly_expenses_report(telegram_id, year, month)
 
-    # Формируем текст отчета
     lines = [f"📅 Отчет за {RUS_MONTHS[month]} {year}"]
 
     if benefits:
         lines.append("\n💰 Доходы:")
+        total_benefit = 0
         for row in benefits:
-            day = int(row["day"])
-            amount = float(row["total_amount"])
-            lines.append(f"{day:02d}: {amount:.2f} ₽")
+            dt: datetime = row["created_at"]
+            amount = float(row["amount"])
+            description = row["description"] or "без описания"
+            total_benefit += amount
+            #lines.append(f"{dt.day:02d}: {amount:.2f} ₽ — {description}")
+            lines.append(f"{dt.day:02d}.{dt.month:02d}: {amount:.2f} ₽ — {description}")
+        lines.append(f"🧾 Всего доходов: {total_benefit:.2f} ₽")
     else:
         lines.append("\n💰 Доходы: отсутствуют")
 
     if expenses:
         lines.append("\n💸 Расходы по категориям:")
+        total_expense = 0
         for row in expenses:
             cat = row["category_name"]
             amount = float(row["total_amount"])
+            total_expense += amount
             lines.append(f"{cat}: {amount:.2f} ₽")
+        lines.append(f"🧾 Всего расходов: {total_expense:.2f} ₽")
     else:
         lines.append("\n💸 Расходы: отсутствуют")
 

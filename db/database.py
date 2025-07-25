@@ -119,3 +119,20 @@ async def get_monthly_expenses_report(telegram_id: int, year: int, month: int):
     pool = get_db_pool()
     async with pool.acquire() as conn:
         return await conn.fetch(query, telegram_id, year, month)
+
+async def get_monthly_benefits_full(telegram_id: int, year: int, month: int):
+    """
+    Возвращает список всех доходов с датой, суммой и описанием.
+    """
+    query = """
+    SELECT b.amount, b.description, b.created_at
+    FROM app.benefits b
+    JOIN app.users u ON u.id = b.user_id
+    WHERE u.telegram_id = $1
+      AND EXTRACT(YEAR FROM b.created_at) = $2
+      AND EXTRACT(MONTH FROM b.created_at) = $3
+    ORDER BY b.created_at
+    """
+    pool = get_db_pool()
+    async with pool.acquire() as conn:
+        return await conn.fetch(query, telegram_id, year, month)

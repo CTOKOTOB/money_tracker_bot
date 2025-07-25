@@ -1,6 +1,7 @@
 import os
 import asyncpg
 from dotenv import load_dotenv
+from datetime import datetime, date
 
 load_dotenv()
 DATABASE_URL = os.getenv("MONEYBOT_DATABASE_URL")
@@ -76,3 +77,45 @@ async def get_last_benefit_for_user(telegram_id: int):
     pool = get_db_pool()
     async with pool.acquire() as conn:
         return await conn.fetchrow(query, telegram_id)
+
+async def get_monthly_benefits_report(telegram_id: int, year: int, month: int):
+    """
+    Возвращает список (день, сумма доходов) за указанный месяц и год.
+    """
+    query = """
+    SELECT
+        EXTRACT(DAY FROM b.created_at) AS day,
+        SUM(b.amount) AS total_amount
+    FROM app.benefits b
+    JOIN app.users u ON u.id = b.user_id
+    WHERE u.telegram_id = $1
+      AND EXTRACT(YEAR FROM b.created_at) = $2
+      AND EXTRACT(MONTH FROM b.created_at) = $3
+    GROUP BY day
+    ORDER BY day
+    """
+    pool = get_db_pool()
+    async with pool.acquire() as conn:
+        return await conn.fetch(query, telegram_id, year, month)
+
+
+async def get_monthly_expenses_report(telegram_id: int, year: int, month: int):
+    """
+    Возвращает сумму расходов по категориям за указанный месяц и год.
+    """
+    query = """
+    SELECT
+        c.name AS category_name,
+        SUM(e.amount) AS total_amount
+    FROM app.expenses e
+    JOIN app.categories c ON c.id = e.category_id
+    JOIN app.users u ON u.id = e.user_id
+    WHERE u.telegram_id = $1
+      AND EXTRACT(YEAR FROM e.created_at) = $2
+      AND EXTRACT(MONTH FROM e.created_at) = $3
+    GROUP BY c.name
+    ORDER BY c.name
+    """
+    pool = get_db_pool()
+    async with pool.acquire() as conn:
+        return await conn.fetch(query, telegram_id, year, month)

@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 from db.database import init_db
 
-from handlers import start, expense, income, delete_income
+from handlers import start, expense, income, delete_income, report
 
 load_dotenv()
 
@@ -18,6 +18,7 @@ async def main():
     dp.include_router(expense.router)
     dp.include_router(income.router)
     dp.include_router(delete_income.router)
+    dp.include_router(report.router)
 
     try:
         print("🚀 Бот запущен")

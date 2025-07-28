@@ -114,7 +114,7 @@ async def get_monthly_expenses_report(telegram_id: int, year: int, month: int):
       AND EXTRACT(YEAR FROM e.created_at) = $2
       AND EXTRACT(MONTH FROM e.created_at) = $3
     GROUP BY c.name
-    ORDER BY c.name
+    ORDER BY total_amount DESC
     """
     pool = get_db_pool()
     async with pool.acquire() as conn:
